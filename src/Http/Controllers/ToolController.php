@@ -38,7 +38,7 @@ class ToolController extends Controller
 
         $fields = request()->only(array_keys($validations));
 
-        if(empty($fields['password'])) {
+        if(request()->filled('password')) {
             unset($fields['password']);
         } else {
             $fields['password'] = Hash::make($fields['password']);
