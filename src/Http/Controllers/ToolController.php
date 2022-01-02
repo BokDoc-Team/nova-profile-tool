@@ -3,28 +3,57 @@
 namespace Runline\ProfileTool\Http\Controllers;
 
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Hash;
 
 class ToolController extends Controller
 {
-
     public function index()
     {
-        $fields = [];
-
-        foreach(config('nova-profile-tool.fields') as $field ) {
-
-          if(!is_null($field['value'])) {
-              $field['value'] = auth()->user()->{$field['value']};
-          }
-
-          $field['name'] = ucfirst(__("validation.attributes." . $field['attribute']));
-          $field['indexName'] = ucfirst(__("validation.attributes." . $field['attribute']));
-
-          $fields[] = $field;
-        }
-
-        return response()->json($fields);
+        return response()->json([
+            [
+                "component" => "text-field",
+                "prefixComponent" => true,
+                "indexName" => __("Name"),
+                "name" => __("Name"),
+                "attribute" => "name",
+                "value" => auth()->user()->name,
+                "panel" => null,
+                "sortable" => false,
+                "textAlign" => "left"
+            ],
+            [
+                "component" => "text-field",
+                "prefixComponent" => true,
+                "indexName" => __("E-mail address"),
+                "name" => __("E-mail address"),
+                "attribute" => "email",
+                "value" => auth()->user()->email,
+                "panel" => null,
+                "sortable" => false,
+                "textAlign" => "left"
+            ],
+            [
+                "component" => "password-field",
+                "prefixComponent" => true,
+                "indexName" => __("Password"),
+                "name" => __("Password"),
+                "attribute" => "password",
+                "value" => null,
+                "panel" => null,
+                "sortable" => false,
+                "textAlign" => "left"
+            ],
+            [
+                "component" => "password-field",
+                "prefixComponent" => true,
+                "indexName" => __("Password Confirmation"),
+                "name" => __("Password Confirmation"),
+                "attribute" => "password_confirmation",
+                "value" => null,
+                "panel" => null,
+                "sortable" => false,
+                "textAlign" => "left"
+            ]
+        ]);
     }
 
     /**
@@ -32,19 +61,21 @@ class ToolController extends Controller
      */
     public function store()
     {
-        $validations = config('nova-profile-tool.validations');
-
-        request()->validate($validations);
-
-        $fields = request()->only(array_keys($validations));
+        request()->validate([
+            'name' => 'required|string',
+            'email' => 'required|email',
+            'password' => 'nullable|string|confirmed'
+        ]);
 
         if(request()->filled('password')) {
-            unset($fields['password']);
+            auth()->user()->update([
+                'name' => request('name'),
+                'email' => request('email'),
+                'password' => bcrypt(request('password')),
+            ]);
         } else {
-            $fields['password'] = Hash::make($fields['password']);
+            auth()->user()->update(request()->only('name', 'email'));
         }
-
-        auth()->user()->update($fields);
 
         return response()->json(__("Your profile has been updated!"));
     }
